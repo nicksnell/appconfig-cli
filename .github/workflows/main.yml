@@ -1,0 +1,58 @@
+name: Test suite
+on: push
+env:
+  POETRY_VERSION: 1.1.13
+jobs:
+  static:
+    name: Static tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install poetry
+        run: |
+          echo "Installing Poetry"
+          pipx install poetry==${POETRY_VERSION}
+
+      - name: Setup Python 3.9
+        id: cache
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.9'
+          cache: 'poetry'
+    
+      - name: Install dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          poetry install
+
+      - name: Run Black
+        run: poetry run black --check appconf tests
+
+      - name: Run Ruff
+        run: poetry run ruff check appconf tests
+
+  unit:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install poetry
+        run: |
+          echo "Installing Poetry"
+          pipx install poetry==${POETRY_VERSION}
+
+      - name: Setup Python 3.9
+        id: cache
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.9'
+          cache: 'poetry'
+    
+      - name: Install dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          poetry install
+
+      - run: poetry run pytest

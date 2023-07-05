@@ -1,0 +1,14 @@
+repos:
+  - repo: https://github.com/psf/black
+    rev: 21.7b0
+    hooks:
+      - id: black
+        files: \.py$
+        types: [file]
+        additional_dependencies: ['click<8.1']
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.0.277
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
