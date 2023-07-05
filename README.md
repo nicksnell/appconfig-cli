@@ -30,7 +30,7 @@ Commands:
 
 ## Examples:
 
-Get current config: `appconf get --app <application name> --profile <profile name>`
-Put new config: `appconf put -a <application name> -p <profile name> path/to/config.json`
+- Get current config: `appconf get --app <application name> --profile <profile name>`
+- Put new config: `appconf put -a <application name> -p <profile name> path/to/config.json`
 
 
