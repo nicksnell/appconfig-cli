@@ -1,4 +1,5 @@
 import dataclasses
+from typing import Optional
 
 
 class Base:
@@ -12,7 +13,7 @@ class Base:
 class Application(Base):
     Id: str
     Name: str
-    Description: str
+    Description: Optional[str] = ""
 
 
 @dataclasses.dataclass

@@ -1,0 +1,2 @@
+class NoHostedConfigurationVersionsFound(Exception):
+    pass

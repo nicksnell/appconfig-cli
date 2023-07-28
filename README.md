@@ -31,6 +31,14 @@ Commands:
 ## Examples:
 
 - Get current config: `appconf get --app <application name> --profile <profile name>`
-- Put new config: `appconf put -a <application name> -p <profile name> path/to/config.json`
+- Put new config: 
+  - `appconf put -a <application name> -p <profile name> path/to/config.json`
+  - `appconf put -a <application name> -p <profile name> < cat path/to/config.json`
+  - `cat path/to/config.json | appconf put -a <application name> -p <profile name>`
 
 
+## Changelog
+
+**0.1.1**
+- Corrected/caught error when retrieving profiles with no configuration
+- Support for pipes when using "put" config

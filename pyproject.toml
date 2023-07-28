@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "appconfig-cli"
-version = "0.1.0"
+version = "0.1.1"
 description = "Unofficial CLI tool for working with AWS AppConfig"
 authors = ["Nick Snell <n@nicksnell.com>"]
 license = "MIT"

@@ -4,6 +4,7 @@ AWS AppConfig CLI
 
 import logging
 import os
+import sys
 
 import boto3
 import click
@@ -12,6 +13,7 @@ from rich.logging import RichHandler
 from rich.rule import Rule
 
 from appconf import api
+from appconf.exceptions import NoHostedConfigurationVersionsFound
 
 logging.basicConfig(level=logging.INFO, handlers=[RichHandler()])
 
@@ -41,9 +43,17 @@ def get_config(ctx, app, profile, meta):
     Get the current hosted configuration for the application & profile
     """
     application, config_profile = api.setup(ctx.obj["appconfig"], app, profile)
-    latest_hosted_config = api.get_latest_hosted_configuration_version(
-        ctx.obj["appconfig"], application, config_profile
-    )
+
+    try:
+        latest_hosted_config = api.get_latest_hosted_configuration_version(
+            ctx.obj["appconfig"], application, config_profile
+        )
+    except NoHostedConfigurationVersionsFound:
+        console.print(
+            "[red]No hosted configuration versions found "
+            f"for {application.Name} ({application.Id})![/red]"
+        )
+        return
 
     if meta:
         console.print(
@@ -62,7 +72,7 @@ def get_config(ctx, app, profile, meta):
 
 @cli.command(name="put")
 @click.pass_context
-@click.argument("config_file", type=click.File("r"))
+@click.argument("config_file", type=click.File("r"), default=sys.stdin)
 @click.option("-a", "--app", help="Application Name", required=True)
 @click.option("-p", "--profile", help="Configuration profile name", required=True)
 @click.option("-d", "--description", help="Description for the version", default="")
@@ -71,17 +81,21 @@ def put_config(ctx, config_file, app, profile, description):
     Upload a new hosted configuration version for the application & profile
     """
     application, config_profile = api.setup(ctx.obj["appconfig"], app, profile)
-    latest_hosted_config = api.get_latest_hosted_configuration_version(
-        ctx.obj["appconfig"], application, config_profile
-    )
+
+    try:
+        latest_hosted_config = api.get_latest_hosted_configuration_version(
+            ctx.obj["appconfig"], application, config_profile
+        )
+    except NoHostedConfigurationVersionsFound:
+        latest_hosted_config = None
 
     version = api.create_configuration(
         ctx.obj["appconfig"],
         application,
         config_profile,
-        latest_hosted_config,
         config_file,
         description,
+        latest_config_profile=latest_hosted_config,
     )
 
     console.print(f"[green]Created new configuration version:[/green] {version}")

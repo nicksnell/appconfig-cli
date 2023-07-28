@@ -1,6 +1,7 @@
 import logging
 
 from appconf.models import Application, ConfigurationProfile, HostedConfigurationVersion
+from appconf.exceptions import NoHostedConfigurationVersionsFound
 
 
 def get_application(appconfig_client, app_name):
@@ -39,6 +40,12 @@ def get_latest_hosted_configuration_version(
         ApplicationId=application.Id, ConfigurationProfileId=config_profile.Id
     )
 
+    if len(config_versions["Items"]) == 0:
+        logging.error("No hosted configuration versions found!")
+        raise NoHostedConfigurationVersionsFound(
+            "No hosted configuration versions found!"
+        )
+
     latest_version = config_versions["Items"][0]
 
     for v in config_versions["Items"]:
@@ -55,12 +62,21 @@ def get_latest_hosted_configuration_version(
 
 
 def create_configuration(
-    client, application, config_profile, latest_config_profile, config_file, description
+    client,
+    application,
+    config_profile,
+    config_file,
+    description,
+    latest_config_profile=None,
 ):
     """
     Create a new hosted configuration version for the application & profile
     """
     content = config_file.read().encode("utf-8")
+
+    current_version = (
+        latest_config_profile.VersionNumber if latest_config_profile else 0
+    )
 
     try:
         response = client.create_hosted_configuration_version(
@@ -69,7 +85,7 @@ def create_configuration(
             Description=description,
             Content=content,
             ContentType="application/json",
-            LatestVersionNumber=latest_config_profile.VersionNumber,
+            LatestVersionNumber=current_version,
         )
     except Exception as e:
         logging.error(f"Error creating hosted configuration version: {e}")
