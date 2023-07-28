@@ -68,9 +68,9 @@ def test_create_configuration(
             client,
             mock_application,
             mock_config_profile,
-            mock_latest_config_profile,
             config_file,
             "Example Configuration",
+            latest_config_profile=mock_latest_config_profile,
         )
 
     assert version == 2
