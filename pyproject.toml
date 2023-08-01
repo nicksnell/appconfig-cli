@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "appconfig-cli"
-version = "0.1.1"
+version = "0.2.0"
 description = "Unofficial CLI tool for working with AWS AppConfig"
 packages = [{include = "appconf"}]
 authors = ["Nick Snell <n@nicksnell.com>"]
@@ -32,6 +32,7 @@ pytest = "^7.4.0"
 ruff = "^0.0.277"
 black = "^23.3.0"
 pre-commit = "^3.3.3"
+invoke = "2.2.0"
 
 
 [tool.poetry.scripts]

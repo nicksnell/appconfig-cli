@@ -1,14 +1,21 @@
 import logging
 
-from appconf.models import Application, ConfigurationProfile, HostedConfigurationVersion
+from appconf.models import (
+    Application,
+    ConfigurationProfile,
+    HostedConfigurationVersion,
+    Deployment,
+    DeploymentStrategy,
+    Environment,
+)
 from appconf.exceptions import NoHostedConfigurationVersionsFound
 
 
-def get_application(appconfig_client, app_name):
+def get_application(client, app_name):
     """
     Get the application id from the application name
     """
-    apps = appconfig_client.list_applications()
+    apps = client.list_applications()
 
     for a in apps["Items"]:
         if a["Name"] == app_name:
@@ -17,11 +24,11 @@ def get_application(appconfig_client, app_name):
     return None
 
 
-def get_config_profile(appconfig_client, app_id, profile_name):
+def get_config_profile(client, app_id, profile_name):
     """
     Get the configuration profile from the application id and profile name
     """
-    profiles = appconfig_client.list_configuration_profiles(ApplicationId=app_id)
+    profiles = client.list_configuration_profiles(ApplicationId=app_id)
 
     for p in profiles["Items"]:
         if p["Name"] == profile_name:
@@ -30,13 +37,11 @@ def get_config_profile(appconfig_client, app_id, profile_name):
     return None
 
 
-def get_latest_hosted_configuration_version(
-    appconfig_client, application, config_profile
-):
+def get_latest_hosted_configuration_version(client, application, config_profile):
     """
     Get the latest hosted configuration version from the configuration profile id
     """
-    config_versions = appconfig_client.list_hosted_configuration_versions(
+    config_versions = client.list_hosted_configuration_versions(
         ApplicationId=application.Id, ConfigurationProfileId=config_profile.Id
     )
 
@@ -52,7 +57,7 @@ def get_latest_hosted_configuration_version(
         if v["VersionNumber"] > latest_version["VersionNumber"]:
             latest_version = v
 
-    latest_hosted_config = appconfig_client.get_hosted_configuration_version(
+    latest_hosted_config = client.get_hosted_configuration_version(
         ApplicationId=application.Id,
         ConfigurationProfileId=config_profile.Id,
         VersionNumber=latest_version["VersionNumber"],
@@ -112,3 +117,50 @@ def setup(client, app_name, profile_name):
         return
 
     return application, config_profile
+
+
+def get_deployment_strategy(client, strategy_name):
+    """
+    Get all deployment strategies
+    """
+    strategies = client.list_deployment_strategies()
+
+    for p in strategies["Items"]:
+        if p["Name"] == strategy_name:
+            return DeploymentStrategy.from_dict(p)
+
+    return None
+
+
+def get_environment(client, application, environment_name):
+    environments = client.list_environments(ApplicationId=application.Id)
+
+    for p in environments["Items"]:
+        if p["Name"] == environment_name:
+            return Environment.from_dict(p)
+
+    return None
+
+
+def start_deployment(
+    client, application, config_profile, deployment_strategy, environment
+):
+    deployment_response = client.start_deployment(
+        ApplicationId=application.Id,
+        ConfigurationProfileId=config_profile.Id,
+        ConfigurationVersion="1",
+        DeploymentStrategyId=deployment_strategy.Id,
+        EnvironmentId=environment.Id,
+    )
+
+    return Deployment.from_dict(deployment_response)
+
+
+def get_deployment(client, application, environment, deployment_number):
+    deployment_response = client.get_deployment(
+        ApplicationId=application.Id,
+        DeploymentNumber=deployment_number,
+        EnvironmentId=environment.Id,
+    )
+
+    return Deployment.from_dict(deployment_response)

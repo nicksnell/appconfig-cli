@@ -34,3 +34,32 @@ class HostedConfigurationVersion(Base):
 
     def get_json(self):
         return self.Content.read().decode("utf-8")
+
+
+@dataclasses.dataclass
+class DeploymentStrategy(Base):
+    Id: str
+    Name: str
+    DeploymentDurationInMinutes: int
+    GrowthType: str
+
+
+@dataclasses.dataclass
+class Environment(Base):
+    ApplicationId: str
+    Id: str
+    Name: str
+    State: str
+
+
+@dataclasses.dataclass
+class Deployment(Base):
+    ApplicationId: str
+    EnvironmentId: str
+    DeploymentStrategyId: str
+    ConfigurationProfileId: str
+    DeploymentNumber: int
+    DeploymentDurationInMinutes: int
+    FinalBakeTimeInMinutes: int
+    State: str
+    PercentageComplete: float

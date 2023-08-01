@@ -5,23 +5,26 @@ AWS AppConfig CLI
 import logging
 import os
 import sys
+import time
 
 import boto3
 import click
 from rich.console import Console
 from rich.logging import RichHandler
+from rich.progress import Progress
 from rich.rule import Rule
 
-from appconf import api
+from appconf import api, __version__
 from appconf.exceptions import NoHostedConfigurationVersionsFound
 
-logging.basicConfig(level=logging.INFO, handlers=[RichHandler()])
+logging.basicConfig(level=logging.CRITICAL, handlers=[RichHandler()])
 
 console = Console()
 
 
 @click.group()
 @click.pass_context
+@click.version_option(__version__)
 @click.option(
     "--aws-profile",
     help="AWS Profile Name",
@@ -76,7 +79,18 @@ def get_config(ctx, app, profile, meta):
 @click.option("-a", "--app", help="Application Name", required=True)
 @click.option("-p", "--profile", help="Configuration profile name", required=True)
 @click.option("-d", "--description", help="Description for the version", default="")
-def put_config(ctx, config_file, app, profile, description):
+@click.option(
+    "--deploy", is_flag=True, help="Deploy to configuration environment", default=False
+)
+@click.option(
+    "--deploy-strategy",
+    help="Deploy using named strategy",
+    default="AppConfig.Linear50PercentEvery30Seconds",
+)
+@click.option("--env", help="Deploy to environment", default="default")
+def put_config(
+    ctx, config_file, app, profile, description, deploy, deploy_strategy, env
+):
     """
     Upload a new hosted configuration version for the application & profile
     """
@@ -99,6 +113,47 @@ def put_config(ctx, config_file, app, profile, description):
     )
 
     console.print(f"[green]Created new configuration version:[/green] {version}")
+
+    if deploy:
+        strategy = api.get_deployment_strategy(ctx.obj["appconfig"], deploy_strategy)
+
+        if strategy is None:
+            console.print(
+                f"[red]Unable to deploy configuration profile using strategy {strategy} "
+                f"for {application.Name} ({application.Id})![/red]"
+            )
+            return
+
+        environment = api.get_environment(ctx.obj["appconfig"], application, env)
+
+        deployment = api.start_deployment(
+            ctx.obj["appconfig"], application, config_profile, strategy, environment
+        )
+
+        with Progress() as progress:
+            task = progress.add_task("Deployment in progress...", total=100)
+            complete_so_far = 0
+
+            while deployment.PercentageComplete != 100.0:
+                time.sleep(20)
+                deployment = api.get_deployment(
+                    ctx.obj["appconfig"],
+                    application,
+                    environment,
+                    deployment.DeploymentNumber,
+                )
+                percent_complete = int(deployment.PercentageComplete)
+                advance = percent_complete - complete_so_far
+                progress.update(task, advance=advance)
+                complete_so_far = percent_complete
+
+            progress.update(task, visible=False)
+
+        console.print(
+            f"[green]Successful deployment to [/green] {env} [green](took "
+            f"{deployment.FinalBakeTimeInMinutes} minute"
+            f"{'s' if deployment.FinalBakeTimeInMinutes > 1 else ''})[/green]"
+        )
 
 
 if __name__ == "__main__":
